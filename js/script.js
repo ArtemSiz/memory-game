@@ -4,12 +4,25 @@ function draw() {
         "apple", "fig", "grape", "kiwi", "lemon", "lime", "mango", "melon",
         "apple", "fig", "grape", "kiwi", "lemon", "lime", "mango", "melon"
     ];
-    let cardSize = {
+    let coordsForCard = {
+        x: 0,
+        y: 0,
         width: 140,
         height: 150
     };
+    let savedCardSize = {
+        width: 140,
+        height: 150
+    };
+    let cardColor = "#204f7a";
     let availableCards = [];
     let checkingTwoCards = [];
+    // properties for animation
+    let ctxSelectedCard;
+    let imgSelectedCard;
+    let requestAnimation;
+    let increaseAnimation = false;
+
     while (availableImages.length > 0) {
         let randomNumber = randomImage(0, availableImages.length - 1);
         let image = new Image();
@@ -26,16 +39,16 @@ function draw() {
         canvas.classList.add("active");
         if (canvas.getContext) {
             let ctx = canvas.getContext("2d");
-            canvas.setAttribute("width", cardSize.width);
-            canvas.setAttribute("height", cardSize.height);
+            canvas.setAttribute("width", savedCardSize.width);
+            canvas.setAttribute("height", savedCardSize.height);
             imageCell.append(canvas);
             imageCell.append(image);
             imageCell.classList.remove("free-cell");
             canvas.id = `card-${image.getAttribute("alt")}`;
             // Add all images to available cards
             availableCards.push(canvas);
-            ctx.fillStyle = '#204f7a';
-            ctx.fillRect(0, 0, cardSize.width, cardSize.height);
+            ctx.fillStyle = cardColor;
+            ctx.fillRect(coordsForCard.x, coordsForCard.y, savedCardSize.width, savedCardSize.height);
             canvas.addEventListener("click", checkCard);
         }
     }
@@ -43,12 +56,11 @@ function draw() {
     function checkCard() {
         if (checkingTwoCards.length <= 1) {
             let canvasCard = this;
-            let imageForCard = canvasCard.nextElementSibling;
+            imgSelectedCard = canvasCard.nextElementSibling;
+            ctxSelectedCard = canvasCard.getContext("2d");
+            window.requestAnimationFrame(runAnimation);
             checkingTwoCards.push(canvasCard);
-            let ctxCard = canvasCard.getContext("2d");
-            ctxCard.drawImage(imageForCard,0,0, cardSize.width, cardSize.height);
-
-            let delayAnimation = setTimeout(() => {
+            let delayShowingCards = setTimeout(() => {
                 if (checkingTwoCards.length > 1) {
                     if (checkingTwoCards[0].id === checkingTwoCards[1].id) {
                         console.log("matched");
@@ -60,7 +72,7 @@ function draw() {
                         checkingTwoCards = [];
                         console.log("availableCards after del", availableCards);
                         if (availableCards.length === 0) {
-                            let playAgain = confirm("You Win! Play again?");
+                            let playAgain = confirm("You won! Play again?");
                             if (playAgain) {
                                 document.location.reload();
                             }
@@ -69,13 +81,31 @@ function draw() {
                         console.log("doesn't match");
                         checkingTwoCards.forEach((wrongCard) => {
                             let ctxWrongCard = wrongCard.getContext("2d");
-                            ctxWrongCard.fillRect(0, 0, cardSize.width, cardSize.height);
+                            ctxWrongCard.fillRect(coordsForCard.x, coordsForCard.y, savedCardSize.width, savedCardSize.height);
                         });
                         checkingTwoCards = [];
                     }
                 }
-                clearTimeout(delayAnimation);
+                clearTimeout(delayShowingCards);
             }, 1500);
+        }
+
+    }
+
+    function runAnimation() {
+        requestAnimation = window.requestAnimationFrame(runAnimation);
+        if (coordsForCard.width > 1 && !increaseAnimation) {
+            ctxSelectedCard.clearRect(coordsForCard.x, coordsForCard.y, coordsForCard.width, coordsForCard.height);
+            coordsForCard.width -= 28;
+            ctxSelectedCard.fillRect(coordsForCard.x, coordsForCard.y, coordsForCard.width, coordsForCard.height);
+        } else if (coordsForCard.width < savedCardSize.width) {
+            increaseAnimation = true;
+            ctxSelectedCard.clearRect(coordsForCard.x, coordsForCard.y, coordsForCard.width, coordsForCard.height);
+            coordsForCard.width += 28;
+            ctxSelectedCard.drawImage(imgSelectedCard, coordsForCard.x, coordsForCard.y, coordsForCard.width, coordsForCard.height);
+        } else if (coordsForCard.width === savedCardSize.width) {
+            cancelAnimationFrame(requestAnimation);
+            increaseAnimation = false;
         }
 
     }
